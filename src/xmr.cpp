@@ -23,11 +23,11 @@ void print(private_key * secrets, int size) {
   std::cout << "private " << secret.transactionHash << std::endl;
 }
 
-bool sign_transaction_json(char * str) {
+int sign_transaction_json(char * str) {
   boost::property_tree::ptree json_root;
   if (!serial_bridge_utils::parsed_json_root(str, json_root)) {
     // it will already have thrown an exception
-    return false;
+    return 0;
   }
 
   const string output_address = json_root.get<string>("output_address");
@@ -88,7 +88,7 @@ bool sign_transaction_json(char * str) {
       );
 
   if (create_tx__retVals.errCode != noError) {
-    return false;
+    return 0;
   }
 
   THROW_WALLET_EXCEPTION_IF(create_tx__retVals.signed_serialized_tx_string == boost::none, error::wallet_internal_error, "Not expecting no signed_serialized_tx_string given no error");
@@ -98,7 +98,7 @@ bool sign_transaction_json(char * str) {
   std::cout << "create_tx__retVals.tx_key_string" << create_tx__retVals.tx_key_string << std::endl;
   std::cout << "create_tx__retVals.tx_pub_key_string" << create_tx__retVals.tx_pub_key_string << std::endl;
 
-  return true;
+  return 1;
 }
 
 #ifdef __cplusplus

@@ -117,6 +117,8 @@ add_compile_options(-maes)
 
 add_compile_definitions(MYMONERO_CORE_CUSTOM)
 
+add_library(MoneroMixin STATIC ${SRC_FILES})
+
 add_executable(Mixin ${SRC_FILES} main.c)
 
 target_link_libraries(

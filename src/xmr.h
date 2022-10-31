@@ -50,22 +50,9 @@ typedef struct output_entry_c {
 
 typedef char public_key_c[32];
 
-typedef struct tx_source_entry_c {
-  output_entry_c output_entry;
-  unsigned long int real_output;
-  char real_out_tx_key[32];
-  unsigned long int real_output_in_tx_index;
-  unsigned long int amount;
-  bool rct;
-  char mask[32];
-  output_entry_c outputs[12]; // TODO
-  public_key_c real_out_additional_tx_keys[];
-  // multisig_kLRki
-} tx_source_entry_c;
-
 void print(private_key * secret, int size);
 
-bool sign_transaction_json(char * str);
+int sign_transaction_json(char * str);
 
 #ifdef __cplusplus
 }
