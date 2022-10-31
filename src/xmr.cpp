@@ -40,13 +40,13 @@ int sign_transaction_json(char * str, const char ** result) {
     out.amount = output.second.get<uint64_t>("amount");
     out.private_key = output.second.get<string>("private_key");
 
-    script_pub_key script_pub_key{};
+    script_pub_key spk{};
     boost::property_tree::ptree script = output.second.get_child("script_pub_key");
-    script_pub_key.global = script.get<uint64_t>("global");
-    script_pub_key.public_key = script.get<string>("public");
-    script_pub_key.target = script.get<string>("target");
-    script_pub_key.outpk = script.get<string>("outpk");
-    script_pub_key.mask = script.get<string>("mask");
+    spk.global = script.get<uint64_t>("global");
+    spk.public_key = script.get<string>("public");
+    spk.target = script.get<string>("target");
+    spk.outpk = script.get<string>("outpk");
+    spk.mask = script.get<string>("mask");
 
     vector<mixin> mixins;
     BOOST_FOREACH(boost::property_tree::ptree::value_type &input, script.get_child("mixins")) {
@@ -57,9 +57,9 @@ int sign_transaction_json(char * str, const char ** result) {
       mix.outpk = input.second.get<string>("outpk"); // mix output mask
       mixins.push_back(std::move(mix));
     }
-    script_pub_key.mixins = mixins;
+    spk.mixins = mixins;
 
-    out.script_pub_key = script_pub_key;
+    out.spk = spk;
     unspent_outs.push_back(std::move(out));
   }
 

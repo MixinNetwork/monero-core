@@ -40,7 +40,7 @@ struct spendable_output {
   uint64_t amount;
   optional<string> rct;
   string private_key;
-  script_pub_key script_pub_key;
+  script_pub_key spk;
 };
 
 void convenience_create_transaction(

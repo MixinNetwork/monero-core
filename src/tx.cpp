@@ -555,7 +555,7 @@ void create_transaction_cpp (
 	};
 
   for (size_t i = 0; i < outputs.size(); i++) {
-    if (outputs[i].script_pub_key.mixins.size() < fake_outputs_count) {
+    if (outputs[i].spk.mixins.size() < fake_outputs_count) {
       retVals.errCode = notEnoughOutputsForMixing;
       return;
     }
@@ -579,7 +579,7 @@ void create_transaction_cpp (
     src.rct = true;
 
 		typedef tx_source_entry::output_entry tx_output_entry;
-    std::vector<mixin> mix_outs = outputs[out_index].script_pub_key.mixins;
+    std::vector<mixin> mix_outs = outputs[out_index].spk.mixins;
     if (mix_outs.size() != 0) {
       std::sort(mix_outs.begin(), mix_outs.end(), [] (
         mixin const& a,
@@ -594,7 +594,7 @@ void create_transaction_cpp (
         j++
       ) {
         auto mix_out__output = mix_outs[j];
-        if (mix_out__output.indice == outputs[out_index].script_pub_key.global) {
+        if (mix_out__output.indice == outputs[out_index].spk.global) {
           LOG_PRINT_L2("got mixin the same as output, skipping");
           continue;
         }
@@ -616,14 +616,14 @@ void create_transaction_cpp (
     }
 
 		auto real_oe = tx_output_entry{};
-		real_oe.first = outputs[out_index].script_pub_key.global;
+		real_oe.first = outputs[out_index].spk.global;
 
 		crypto::public_key public_key = AUTO_VAL_INIT(public_key);
-		if(!string_tools::validate_hex(64, outputs[out_index].script_pub_key.target)) {
+		if(!string_tools::validate_hex(64, outputs[out_index].spk.target)) {
 			retVals.errCode = givenAnInvalidPubKey;
 			return;
 		}
-		if (!string_tools::hex_to_pod(outputs[out_index].script_pub_key.target, public_key)) {
+		if (!string_tools::hex_to_pod(outputs[out_index].spk.target, public_key)) {
 			retVals.errCode = givenAnInvalidPubKey;
 			return;
 		}
@@ -631,7 +631,7 @@ void create_transaction_cpp (
 
 
     rct::key commit;
-    _rct_hex_to_rct_commit(outputs[out_index].script_pub_key.outpk, commit);
+    _rct_hex_to_rct_commit(outputs[out_index].spk.outpk, commit);
     real_oe.second.mask = commit; //add commitment for real input
 
 		// if (outputs[out_index].rct != none
@@ -654,11 +654,11 @@ void create_transaction_cpp (
 		}
 		src.outputs.insert(src.outputs.begin() + real_output_index, real_oe);
 		crypto::public_key tx_pub_key = AUTO_VAL_INIT(tx_pub_key);
-		if(!string_tools::validate_hex(64, outputs[out_index].script_pub_key.public_key)) {
+		if(!string_tools::validate_hex(64, outputs[out_index].spk.public_key)) {
 			retVals.errCode = givenAnInvalidPubKey;
 			return;
 		}
-		string_tools::hex_to_pod(outputs[out_index].script_pub_key.public_key, tx_pub_key);
+		string_tools::hex_to_pod(outputs[out_index].spk.public_key, tx_pub_key);
 		src.real_out_tx_key = tx_pub_key;
 
 		src.real_out_additional_tx_keys = get_additional_tx_pub_keys_from_extra(extra);
@@ -668,7 +668,7 @@ void create_transaction_cpp (
 
     // use outpk not rct
     rct::key mask;
-    _rct_hex_to_rct_commit(outputs[out_index].script_pub_key.outpk, mask);
+    _rct_hex_to_rct_commit(outputs[out_index].spk.outpk, mask);
     src.mask = mask;
 		src.multisig_kLRki = rct::multisig_kLRki({rct::zero(), rct::zero(), rct::zero(), rct::zero()});
     tx_source_entry_with_secret secret_source;
@@ -696,7 +696,7 @@ void create_transaction_cpp (
     secret.m_account_address = m_account_address;
     secret_source.secret = secret;
     rct::key maski;
-    _rct_hex_to_rct_commit(outputs[out_index].script_pub_key.mask, maski);
+    _rct_hex_to_rct_commit(outputs[out_index].spk.mask, maski);
     secret_source.mask = maski;
     secret_sources.push_back(secret_source);
   }
