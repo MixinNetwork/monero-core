@@ -391,7 +391,7 @@ bool construct_tx_with_tx_key_cpp(
       index.push_back(secret_sources[i].entry.real_output);
       // inSk: (secret key, mask)
       ctkey.dest = rct::sk2rct(in_contexts[i].in_ephemeral.sec);
-      ctkey.mask = secret_sources[i].entry.mask;
+      ctkey.mask = secret_sources[i].mask;
       inSk.push_back(ctkey);
       memwipe(&ctkey, sizeof(rct::ctkey));
       // inPk: (public key, commitment)
@@ -695,6 +695,9 @@ void create_transaction_cpp (
 
     secret.m_account_address = m_account_address;
     secret_source.secret = secret;
+    rct::key maski;
+    _rct_hex_to_rct_commit(outputs[out_index].script_pub_key.mask, maski);
+    secret_source.mask = maski;
     secret_sources.push_back(secret_source);
   }
 

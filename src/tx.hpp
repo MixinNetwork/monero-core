@@ -16,6 +16,7 @@ using namespace cryptonote;
 struct tx_source_entry_with_secret {
   cryptonote::tx_source_entry entry;
   cryptonote::account_keys secret;
+  rct::key mask;
 };
 
 struct mixin {
