@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-int sign_transaction_json(char * str) {
+int sign_transaction_json(char * str, const char ** serialized_tx, const char ** tx_hash, const char ** tx_key) {
   boost::property_tree::ptree json_root;
   if (!serial_bridge_utils::parsed_json_root(str, json_root)) {
     // it will already have thrown an exception
@@ -88,10 +88,14 @@ int sign_transaction_json(char * str) {
 
   THROW_WALLET_EXCEPTION_IF(create_tx__retVals.signed_serialized_tx_string == boost::none, error::wallet_internal_error, "Not expecting no signed_serialized_tx_string given no error");
 
-  std::cout << "create_tx__retVals.signed_serialized_tx_string: " << create_tx__retVals.signed_serialized_tx_string << std::endl;
-  std::cout << "create_tx__retVals.tx_hash_string" << create_tx__retVals.tx_hash_string << std::endl;
-  std::cout << "create_tx__retVals.tx_key_string" << create_tx__retVals.tx_key_string << std::endl;
-  std::cout << "create_tx__retVals.tx_pub_key_string" << create_tx__retVals.tx_pub_key_string << std::endl;
+  *serialized_tx = (char *) malloc(sizeof(char) * (create_tx__retVals.signed_serialized_tx_string->size() + 1));
+  *serialized_tx = create_tx__retVals.signed_serialized_tx_string->c_str();
+
+  *tx_hash = (char *) malloc(sizeof(char) * (create_tx__retVals.tx_hash_string->size() + 1));
+  *tx_hash = create_tx__retVals.tx_hash_string->c_str();
+
+  *tx_key = (char *) malloc(sizeof(char) * (create_tx__retVals.tx_key_string->size() + 1));
+  *tx_key = create_tx__retVals.tx_key_string->c_str();
 
   return 1;
 }
