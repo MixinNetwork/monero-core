@@ -18,11 +18,6 @@
 extern "C" {
 #endif
 
-void print(private_key * secrets, int size) {
-  private_key secret = secrets[0];
-  std::cout << "private " << secret.transactionHash << std::endl;
-}
-
 int sign_transaction_json(char * str) {
   boost::property_tree::ptree json_root;
   if (!serial_bridge_utils::parsed_json_root(str, json_root)) {
@@ -99,6 +94,10 @@ int sign_transaction_json(char * str) {
   std::cout << "create_tx__retVals.tx_pub_key_string" << create_tx__retVals.tx_pub_key_string << std::endl;
 
   return 1;
+}
+
+int sum(int a, int b) {
+  return a + b;
 }
 
 #ifdef __cplusplus
