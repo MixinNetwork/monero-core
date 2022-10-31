@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-int sign_transaction_json(char * str, const char ** serialized_tx, const char ** tx_hash, const char ** tx_key) {
+int sign_transaction_json(char * str, const char ** result) {
   boost::property_tree::ptree json_root;
   if (!serial_bridge_utils::parsed_json_root(str, json_root)) {
     // it will already have thrown an exception
@@ -88,14 +88,13 @@ int sign_transaction_json(char * str, const char ** serialized_tx, const char **
 
   THROW_WALLET_EXCEPTION_IF(create_tx__retVals.signed_serialized_tx_string == boost::none, error::wallet_internal_error, "Not expecting no signed_serialized_tx_string given no error");
 
-  *serialized_tx = (char *) malloc(sizeof(char) * (create_tx__retVals.signed_serialized_tx_string->size() + 1));
-  *serialized_tx = create_tx__retVals.signed_serialized_tx_string->c_str();
+  string tx = create_tx__retVals.signed_serialized_tx_string.get();
+  string txhash = create_tx__retVals.tx_hash_string.get();
+  string txkey = create_tx__retVals.tx_key_string.get();
 
-  *tx_hash = (char *) malloc(sizeof(char) * (create_tx__retVals.tx_hash_string->size() + 1));
-  *tx_hash = create_tx__retVals.tx_hash_string->c_str();
-
-  *tx_key = (char *) malloc(sizeof(char) * (create_tx__retVals.tx_key_string->size() + 1));
-  *tx_key = create_tx__retVals.tx_key_string->c_str();
+  string r = tx+":"+txhash+":"+txkey;
+  *result = (char *) malloc(sizeof(char) * (r.size() + 1));
+  *result = r.c_str();
 
   return 1;
 }
