@@ -1,0 +1,3 @@
+[submodule "contrib/mymonero-core-cpp"]
+	path = contrib/mymonero-core-cpp
+	url = https://github.com/mymonero/mymonero-core-cpp.git
