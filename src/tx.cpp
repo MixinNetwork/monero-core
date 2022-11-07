@@ -464,17 +464,17 @@ bool construct_tx_with_tx_key_cpp(
 
 // construct_tx_and_get_tx_key
 bool construct_tx_and_get_tx_key_cpp(
-  std::vector<tx_source_entry_with_secret>& secret_sources,
-  std::vector<tx_destination_entry>& destinations,
-  const boost::optional<account_public_address>& change_addr,
-  const std::vector<uint8_t> &extra,
-  transaction& tx,
-  uint64_t unlock_time,
-  crypto::secret_key &tx_key,
-  std::vector<crypto::secret_key> &additional_tx_keys,
-  bool rct,
-  const rct::RCTConfig &rct_config,
-  bool use_view_tags
+    std::vector<tx_source_entry_with_secret>& secret_sources,
+    std::vector<tx_destination_entry>& destinations,
+    const boost::optional<account_public_address>& change_addr,
+    const std::vector<uint8_t> &extra,
+    transaction& tx,
+    uint64_t unlock_time,
+    crypto::secret_key &tx_key,
+    std::vector<crypto::secret_key> &additional_tx_keys,
+    bool rct,
+    const rct::RCTConfig &rct_config,
+    bool use_view_tags
 ) {
   hw::device &hwdev = hw::get_device("default");
   hwdev.open_tx(tx_key);
@@ -506,53 +506,53 @@ bool construct_tx_and_get_tx_key_cpp(
 }
 
 bool _rct_hex_to_rct_commit(
-	const std::string &rct_string,
-	rct::key &rct_commit
+    const std::string &rct_string,
+    rct::key &rct_commit
 ) {
-	// rct string is empty if output is non RCT
-	if (rct_string.empty()) {
-		return false;
-	}
-	// rct_string is a string with length 64+64+64 (<rct commit> + <encrypted mask> + <rct amount>)
-	std::string rct_commit_str = rct_string.substr(0,64);
-	THROW_WALLET_EXCEPTION_IF(!string_tools::validate_hex(64, rct_commit_str), error::wallet_internal_error, "Invalid rct commit hash: " + rct_commit_str);
-	string_tools::hex_to_pod(rct_commit_str, rct_commit);
-	return true;
+  // rct string is empty if output is non RCT
+  if (rct_string.empty()) {
+    return false;
+  }
+  // rct_string is a string with length 64+64+64 (<rct commit> + <encrypted mask> + <rct amount>)
+  std::string rct_commit_str = rct_string.substr(0,64);
+  THROW_WALLET_EXCEPTION_IF(!string_tools::validate_hex(64, rct_commit_str), error::wallet_internal_error, "Invalid rct commit hash: " + rct_commit_str);
+  string_tools::hex_to_pod(rct_commit_str, rct_commit);
+  return true;
 }
 
 // create_transaction
 void create_transaction_cpp (
-  TransactionConstruction_RetVals &retVals,
-  const uint32_t subaddr_account_idx,
-	const vector<address_parse_info> &to_addrs, 
-	const vector<uint64_t>& sending_amounts,
-	uint64_t change_amount,
-	uint64_t fee_amount,
-	const vector<spendable_output> &outputs,
-	const std::vector<uint8_t> &extra,
-	use_fork_rules_fn_type use_fork_rules_fn,
-	uint64_t unlock_time, // or 0
-	bool rct,
-	network_type nettype
+    TransactionConstruction_RetVals &retVals,
+    const uint32_t subaddr_account_idx,
+    const vector<address_parse_info> &to_addrs, 
+    const vector<uint64_t>& sending_amounts,
+    uint64_t change_amount,
+    uint64_t fee_amount,
+    const vector<spendable_output> &outputs,
+    const std::vector<uint8_t> &extra,
+    use_fork_rules_fn_type use_fork_rules_fn,
+    uint64_t unlock_time, // or 0
+    bool rct,
+    network_type nettype
 ) {
-	retVals.errCode = noError;
+  retVals.errCode = noError;
 
   uint32_t fake_outputs_count = fixed_mixinsize();
-	rct::RangeProofType range_proof_type = rct::RangeProofPaddedBulletproof;
-	int bp_version = 1;
-	if (use_fork_rules_fn(HF_VERSION_BULLETPROOF_PLUS, -10)) {
-		bp_version = 4;
-	}
-	else if (use_fork_rules_fn(HF_VERSION_CLSAG, -10)) {
-		bp_version = 3;
-	}
-	else if (use_fork_rules_fn(HF_VERSION_SMALLER_BP, -10)) {
-		bp_version = 2;
-	}
-	const rct::RCTConfig rct_config {
-		range_proof_type,
-		bp_version,
-	};
+  rct::RangeProofType range_proof_type = rct::RangeProofPaddedBulletproof;
+  int bp_version = 1;
+  if (use_fork_rules_fn(HF_VERSION_BULLETPROOF_PLUS, -10)) {
+    bp_version = 4;
+  }
+  else if (use_fork_rules_fn(HF_VERSION_CLSAG, -10)) {
+    bp_version = 3;
+  }
+  else if (use_fork_rules_fn(HF_VERSION_SMALLER_BP, -10)) {
+    bp_version = 2;
+  }
+  const rct::RCTConfig rct_config {
+    range_proof_type,
+      bp_version,
+  };
 
   for (size_t i = 0; i < outputs.size(); i++) {
     if (outputs[i].spk.mixins.size() < fake_outputs_count) {
@@ -561,10 +561,10 @@ void create_transaction_cpp (
     }
   }
 
- 	uint64_t needed_money = fee_amount + change_amount;
- 	for (uint64_t amount : sending_amounts) {
- 		needed_money += amount;
- 	}
+  uint64_t needed_money = fee_amount + change_amount;
+  for (uint64_t amount : sending_amounts) {
+    needed_money += amount;
+  }
 
   uint64_t found_money = 0;
   vector<tx_source_entry_with_secret> secret_sources; // TODO
@@ -573,26 +573,26 @@ void create_transaction_cpp (
     if (found_money > UINT64_MAX) {
       retVals.errCode = inputAmountOverflow;
     }
-		auto src = tx_source_entry{};
-		src.amount = outputs[out_index].amount;
-		// src.rct = outputs[out_index].rct != none && (*(outputs[out_index].rct)).empty() == false; // TODO what is rct 
+    auto src = tx_source_entry{};
+    src.amount = outputs[out_index].amount;
+    // src.rct = outputs[out_index].rct != none && (*(outputs[out_index].rct)).empty() == false; // TODO what is rct 
     src.rct = true;
 
-		typedef tx_source_entry::output_entry tx_output_entry;
+    typedef tx_source_entry::output_entry tx_output_entry;
     std::vector<mixin> mix_outs = outputs[out_index].spk.mixins;
     if (mix_outs.size() != 0) {
       std::sort(mix_outs.begin(), mix_outs.end(), [] (
-        mixin const& a,
-        mixin const& b
-      ) {
-        return a.indice < b.indice;
-      });
+            mixin const& a,
+            mixin const& b
+            ) {
+          return a.indice < b.indice;
+          });
 
       for (
-        size_t j = 0;
-        src.outputs.size() < fake_outputs_count && j < mix_outs.size();
-        j++
-      ) {
+          size_t j = 0;
+          src.outputs.size() < fake_outputs_count && j < mix_outs.size();
+          j++
+          ) {
         auto mix_out__output = mix_outs[j];
         if (mix_out__output.indice == outputs[out_index].spk.global) {
           LOG_PRINT_L2("got mixin the same as output, skipping");
@@ -615,74 +615,74 @@ void create_transaction_cpp (
       }
     }
 
-		auto real_oe = tx_output_entry{};
-		real_oe.first = outputs[out_index].spk.global;
+    auto real_oe = tx_output_entry{};
+    real_oe.first = outputs[out_index].spk.global;
 
-		crypto::public_key public_key = AUTO_VAL_INIT(public_key);
-		if(!string_tools::validate_hex(64, outputs[out_index].spk.target)) {
-			retVals.errCode = givenAnInvalidPubKey;
-			return;
-		}
-		if (!string_tools::hex_to_pod(outputs[out_index].spk.target, public_key)) {
-			retVals.errCode = givenAnInvalidPubKey;
-			return;
-		}
-		real_oe.second.dest = rct::pk2rct(public_key);
+    crypto::public_key public_key = AUTO_VAL_INIT(public_key);
+    if(!string_tools::validate_hex(64, outputs[out_index].spk.target)) {
+      retVals.errCode = givenAnInvalidPubKey;
+      return;
+    }
+    if (!string_tools::hex_to_pod(outputs[out_index].spk.target, public_key)) {
+      retVals.errCode = givenAnInvalidPubKey;
+      return;
+    }
+    real_oe.second.dest = rct::pk2rct(public_key);
 
 
     rct::key commit;
     _rct_hex_to_rct_commit(outputs[out_index].spk.outpk, commit);
     real_oe.second.mask = commit; //add commitment for real input
 
-		// if (outputs[out_index].rct != none
-		// 		&& outputs[out_index].rct->empty() == false
-		// 		&& *outputs[out_index].rct != "coinbase") {
-		// 	rct::key commit;
-		// 	_rct_hex_to_rct_commit(*(outputs[out_index].rct), commit);
-		// 	real_oe.second.mask = commit; //add commitment for real input
-		// } else {
-		// 	real_oe.second.mask = rct::zeroCommit(src.amount/*aka outputs[out_index].amount*/); //create identity-masked commitment for non-rct input
-		// }
+    // if (outputs[out_index].rct != none
+    // 		&& outputs[out_index].rct->empty() == false
+    // 		&& *outputs[out_index].rct != "coinbase") {
+    // 	rct::key commit;
+    // 	_rct_hex_to_rct_commit(*(outputs[out_index].rct), commit);
+    // 	real_oe.second.mask = commit; //add commitment for real input
+    // } else {
+    // 	real_oe.second.mask = rct::zeroCommit(src.amount/*aka outputs[out_index].amount*/); //create identity-masked commitment for non-rct input
+    // }
 
-		// Add real_oe to outputs
+    // Add real_oe to outputs
     uint64_t real_output_index = src.outputs.size();
-		for (size_t j = 0; j < src.outputs.size(); j++) {
-			if (real_oe.first < src.outputs[j].first) {
-				real_output_index = j;
-				break;
-			}
-		}
-		src.outputs.insert(src.outputs.begin() + real_output_index, real_oe);
-		crypto::public_key tx_pub_key = AUTO_VAL_INIT(tx_pub_key);
-		if(!string_tools::validate_hex(64, outputs[out_index].spk.public_key)) {
-			retVals.errCode = givenAnInvalidPubKey;
-			return;
-		}
-		string_tools::hex_to_pod(outputs[out_index].spk.public_key, tx_pub_key);
-		src.real_out_tx_key = tx_pub_key;
+    for (size_t j = 0; j < src.outputs.size(); j++) {
+      if (real_oe.first < src.outputs[j].first) {
+        real_output_index = j;
+        break;
+      }
+    }
+    src.outputs.insert(src.outputs.begin() + real_output_index, real_oe);
+    crypto::public_key tx_pub_key = AUTO_VAL_INIT(tx_pub_key);
+    if(!string_tools::validate_hex(64, outputs[out_index].spk.public_key)) {
+      retVals.errCode = givenAnInvalidPubKey;
+      return;
+    }
+    string_tools::hex_to_pod(outputs[out_index].spk.public_key, tx_pub_key);
+    src.real_out_tx_key = tx_pub_key;
 
-		src.real_out_additional_tx_keys = get_additional_tx_pub_keys_from_extra(extra);
-		src.real_output = real_output_index;
-		uint64_t internal_output_index = outputs[out_index].index;
-		src.real_output_in_tx_index = internal_output_index;
+    src.real_out_additional_tx_keys = get_additional_tx_pub_keys_from_extra(extra);
+    src.real_output = real_output_index;
+    uint64_t internal_output_index = outputs[out_index].index;
+    src.real_output_in_tx_index = internal_output_index;
 
     // use outpk not rct
     rct::key mask;
     _rct_hex_to_rct_commit(outputs[out_index].spk.outpk, mask);
     src.mask = mask;
-		src.multisig_kLRki = rct::multisig_kLRki({rct::zero(), rct::zero(), rct::zero(), rct::zero()});
+    src.multisig_kLRki = rct::multisig_kLRki({rct::zero(), rct::zero(), rct::zero(), rct::zero()});
     tx_source_entry_with_secret secret_source;
     secret_source.entry = src;
 
     account_keys secret;
     crypto::secret_key sec_viewKey;
     string secret_view = outputs[out_index].private_key.substr(0, 64);
-		THROW_WALLET_EXCEPTION_IF(!string_tools::hex_to_pod(secret_view, sec_viewKey), error::wallet_internal_error, "Couldn't parse view key");
+    THROW_WALLET_EXCEPTION_IF(!string_tools::hex_to_pod(secret_view, sec_viewKey), error::wallet_internal_error, "Couldn't parse view key");
     secret.m_view_secret_key = sec_viewKey;
-    
+
     crypto::secret_key sec_spendKey;
     string secret_spent = outputs[out_index].private_key.substr(64, 64);
-		THROW_WALLET_EXCEPTION_IF(!string_tools::hex_to_pod(secret_spent, sec_spendKey), error::wallet_internal_error, "Couldn't parse spend key");
+    THROW_WALLET_EXCEPTION_IF(!string_tools::hex_to_pod(secret_spent, sec_spendKey), error::wallet_internal_error, "Couldn't parse spend key");
     secret.m_spend_secret_key = sec_spendKey;
 
     account_public_address m_account_address;
@@ -705,7 +705,7 @@ void create_transaction_cpp (
       error::wallet_internal_error,
       "Amounts don't match destinations");
 
-	std::vector<tx_destination_entry> splitted_dsts;
+  std::vector<tx_destination_entry> splitted_dsts;
   for (size_t i = 0; i < to_addrs.size(); ++i) {
     tx_destination_entry to_dst = AUTO_VAL_INIT(to_dst);
     to_dst.addr = to_addrs[i].address;
@@ -714,9 +714,9 @@ void create_transaction_cpp (
     splitted_dsts.push_back(to_dst);
   }
 
-	tx_destination_entry change_dst = AUTO_VAL_INIT(change_dst);
-	change_dst.amount = change_amount;
-	//
+  tx_destination_entry change_dst = AUTO_VAL_INIT(change_dst);
+  change_dst.amount = change_amount;
+  //
   if (change_dst.amount == 0) {
     if (splitted_dsts.size() == 1) {
       // If the change is 0, send it to a random address, to avoid confusing
@@ -732,143 +732,143 @@ void create_transaction_cpp (
     }
   }
 
-	if (found_money > needed_money) {
-		if (change_dst.amount != fee_amount) {
-			retVals.errCode = resultFeeNotEqualToGiven; // aka "early fee calculation != later"
-			return; // early
-		}
-	} else if (found_money < needed_money) {
-		retVals.errCode = needMoreMoneyThanFound; // TODO: return actual found_money and needed_money in generalized err params in return val
-		return;
-	}
+  if (found_money > needed_money) {
+    if (change_dst.amount != fee_amount) {
+      retVals.errCode = resultFeeNotEqualToGiven; // aka "early fee calculation != later"
+      return; // early
+    }
+  } else if (found_money < needed_money) {
+    retVals.errCode = needMoreMoneyThanFound; // TODO: return actual found_money and needed_money in generalized err params in return val
+    return;
+  }
 
-	transaction tx;
-	crypto::secret_key tx_key;
-	std::vector<crypto::secret_key> additional_tx_keys;
+  transaction tx;
+  crypto::secret_key tx_key;
+  std::vector<crypto::secret_key> additional_tx_keys;
 
   bool r = construct_tx_and_get_tx_key_cpp(
-    secret_sources,
-    splitted_dsts, change_dst.addr, extra,
-    tx, unlock_time, tx_key, additional_tx_keys,
-    true, rct_config, true
-  );
+      secret_sources,
+      splitted_dsts, change_dst.addr, extra,
+      tx, unlock_time, tx_key, additional_tx_keys,
+      true, rct_config, true
+      );
 
-	LOG_PRINT_L2("constructed tx, r="<<r);
-	if (!r) {
-		// TODO: return error::tx_not_constructed, sources, dsts, unlock_time, nettype
-		retVals.errCode = transactionNotConstructed;
-		return;
-	}
-	bool use_bulletproofs = !tx.rct_signatures.p.bulletproofs_plus.empty();
-	THROW_WALLET_EXCEPTION_IF(use_bulletproofs != true, error::wallet_internal_error, "Expected tx use_bulletproofs to equal bulletproof flag");
-	//
-	retVals.tx = tx;
-	retVals.tx_key = tx_key;
-	retVals.additional_tx_keys = additional_tx_keys;
+  LOG_PRINT_L2("constructed tx, r="<<r);
+  if (!r) {
+    // TODO: return error::tx_not_constructed, sources, dsts, unlock_time, nettype
+    retVals.errCode = transactionNotConstructed;
+    return;
+  }
+  bool use_bulletproofs = !tx.rct_signatures.p.bulletproofs_plus.empty();
+  THROW_WALLET_EXCEPTION_IF(use_bulletproofs != true, error::wallet_internal_error, "Expected tx use_bulletproofs to equal bulletproof flag");
+  //
+  retVals.tx = tx;
+  retVals.tx_key = tx_key;
+  retVals.additional_tx_keys = additional_tx_keys;
 }
 
 // convenience__create_transaction
 void convenience_create_transaction(
-  Convenience_TransactionConstruction_RetVals& retVals,
-  const vector<string>& to_address_strings,
-	const vector<uint64_t>& sending_amounts,
-	uint64_t fee_amount,
-	const vector<spendable_output> &outs,
-  uint64_t unlock_time,
-  network_type nettype
+    Convenience_TransactionConstruction_RetVals& retVals,
+    const vector<string>& to_address_strings,
+    const vector<uint64_t>& sending_amounts,
+    uint64_t fee_amount,
+    const vector<spendable_output> &outs,
+    uint64_t unlock_time,
+    network_type nettype
 ) {
-	retVals.errCode = noError;
+  retVals.errCode = noError;
 
-	vector<address_parse_info> to_addr_infos(to_address_strings.size());
- 	size_t to_addr_idx = 0;
- 	for (const auto& addr : to_address_strings) {
- 		THROW_WALLET_EXCEPTION_IF(
- 			addr.find(".") != std::string::npos, // assumed to be an OA address asXMR addresses do not have periods and OA addrs must
- 			error::wallet_internal_error,
- 			"Integrators must resolve OA addresses before calling Send"
- 		); // This would be an app code fault
- 		if (!get_account_address_from_str(to_addr_infos[to_addr_idx++], nettype, addr)) {
- 			retVals.errCode = couldntDecodeToAddress;
- 			return;
- 		}
-	}
+  vector<address_parse_info> to_addr_infos(to_address_strings.size());
+  size_t to_addr_idx = 0;
+  for (const auto& addr : to_address_strings) {
+    THROW_WALLET_EXCEPTION_IF(
+        addr.find(".") != std::string::npos, // assumed to be an OA address asXMR addresses do not have periods and OA addrs must
+        error::wallet_internal_error,
+        "Integrators must resolve OA addresses before calling Send"
+        ); // This would be an app code fault
+    if (!get_account_address_from_str(to_addr_infos[to_addr_idx++], nettype, addr)) {
+      retVals.errCode = couldntDecodeToAddress;
+      return;
+    }
+  }
 
-	std::vector<uint8_t> extra;
+  std::vector<uint8_t> extra;
   // payment_id_string is empty
   bool payment_id_seen = false;
-	for (const auto& to_addr_info : to_addr_infos) {
-		if (to_addr_info.is_subaddress && payment_id_seen) {
- 			retVals.errCode = cantUsePIDWithSubAddress; // Never use a subaddress with a payment ID
- 			return;
-		}
-		if (to_addr_info.has_payment_id) {
- 			if (payment_id_seen) {
- 				retVals.errCode = nonZeroPIDWithIntAddress; // can't use int addr at same time as supplying manual pid
- 				return;
- 			}
- 			if (to_addr_info.is_subaddress) {
- 				THROW_WALLET_EXCEPTION_IF(false, error::wallet_internal_error, "Unexpected is_subaddress && has_payment_id"); // should never happen
- 				return;
- 			}
- 			std::string extra_nonce;
- 			set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, to_addr_info.payment_id);
- 			bool r = add_extra_nonce_to_tx_extra(extra, extra_nonce);
- 			if (!r) {
- 				retVals.errCode = couldntAddPIDNonceToTXExtra;
- 				return;
- 			}
- 			payment_id_seen = true;
-		}
-	}
+  for (const auto& to_addr_info : to_addr_infos) {
+    if (to_addr_info.is_subaddress && payment_id_seen) {
+      retVals.errCode = cantUsePIDWithSubAddress; // Never use a subaddress with a payment ID
+      return;
+    }
+    if (to_addr_info.has_payment_id) {
+      if (payment_id_seen) {
+        retVals.errCode = nonZeroPIDWithIntAddress; // can't use int addr at same time as supplying manual pid
+        return;
+      }
+      if (to_addr_info.is_subaddress) {
+        THROW_WALLET_EXCEPTION_IF(false, error::wallet_internal_error, "Unexpected is_subaddress && has_payment_id"); // should never happen
+        return;
+      }
+      std::string extra_nonce;
+      set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, to_addr_info.payment_id);
+      bool r = add_extra_nonce_to_tx_extra(extra, extra_nonce);
+      if (!r) {
+        retVals.errCode = couldntAddPIDNonceToTXExtra;
+        return;
+      }
+      payment_id_seen = true;
+    }
+  }
 
   //subaddresses always {0,0}
-	const uint32_t subaddr_account_idx = 0;
+  const uint32_t subaddr_account_idx = 0;
   uint64_t change_amount = 0;
   uint8_t fork_version = 0;
 
-	TransactionConstruction_RetVals actualCall_retVals;
+  TransactionConstruction_RetVals actualCall_retVals;
   create_transaction_cpp(
-    actualCall_retVals,
-    subaddr_account_idx,
-		to_addr_infos,
-		sending_amounts,
-    change_amount,
-    fee_amount,
-    outs,
-    extra,
-    make_use_fork_rules_fn(fork_version),
-    unlock_time,
-    true,
-    nettype
-  );
+      actualCall_retVals,
+      subaddr_account_idx,
+      to_addr_infos,
+      sending_amounts,
+      change_amount,
+      fee_amount,
+      outs,
+      extra,
+      make_use_fork_rules_fn(fork_version),
+      unlock_time,
+      true,
+      nettype
+      );
 
-	if (actualCall_retVals.errCode != noError) {
-		retVals.errCode = actualCall_retVals.errCode; // pass-through
-		return; // already set the error
-	}
+  if (actualCall_retVals.errCode != noError) {
+    retVals.errCode = actualCall_retVals.errCode; // pass-through
+    return; // already set the error
+  }
 
-	auto txBlob = t_serializable_object_to_blob(*actualCall_retVals.tx);
-	size_t txBlob_byteLength = txBlob.size();
-	THROW_WALLET_EXCEPTION_IF(txBlob_byteLength <= 0, error::wallet_internal_error, "Expected tx blob byte length > 0");
+  auto txBlob = t_serializable_object_to_blob(*actualCall_retVals.tx);
+  size_t txBlob_byteLength = txBlob.size();
+  THROW_WALLET_EXCEPTION_IF(txBlob_byteLength <= 0, error::wallet_internal_error, "Expected tx blob byte length > 0");
 
-	// tx hash
-	retVals.tx_hash_string = epee::string_tools::pod_to_hex(get_transaction_hash(*actualCall_retVals.tx));
-	// signed serialized tx
-	retVals.signed_serialized_tx_string = epee::string_tools::buff_to_hex_nodelimer(tx_to_blob(*actualCall_retVals.tx));
-	// (concatenated) tx key
-	{
-		ostringstream oss;
-		oss << epee::string_tools::pod_to_hex(*actualCall_retVals.tx_key);
-		for (size_t i = 0; i < (*actualCall_retVals.additional_tx_keys).size(); ++i) {
-			oss << epee::string_tools::pod_to_hex((*actualCall_retVals.additional_tx_keys)[i]);
-		}
-		retVals.tx_key_string = oss.str();
-	}
-	{
-		ostringstream oss;
-		oss << epee::string_tools::pod_to_hex(get_tx_pub_key_from_extra(*actualCall_retVals.tx));
-		retVals.tx_pub_key_string = oss.str();
-	}
-	retVals.tx = *actualCall_retVals.tx; // for calculating block weight; FIXME: std::move?
-	retVals.txBlob_byteLength = txBlob_byteLength;
+  // tx hash
+  retVals.tx_hash_string = epee::string_tools::pod_to_hex(get_transaction_hash(*actualCall_retVals.tx));
+  // signed serialized tx
+  retVals.signed_serialized_tx_string = epee::string_tools::buff_to_hex_nodelimer(tx_to_blob(*actualCall_retVals.tx));
+  // (concatenated) tx key
+  {
+    ostringstream oss;
+    oss << epee::string_tools::pod_to_hex(*actualCall_retVals.tx_key);
+    for (size_t i = 0; i < (*actualCall_retVals.additional_tx_keys).size(); ++i) {
+      oss << epee::string_tools::pod_to_hex((*actualCall_retVals.additional_tx_keys)[i]);
+    }
+    retVals.tx_key_string = oss.str();
+  }
+  {
+    ostringstream oss;
+    oss << epee::string_tools::pod_to_hex(get_tx_pub_key_from_extra(*actualCall_retVals.tx));
+    retVals.tx_pub_key_string = oss.str();
+  }
+  retVals.tx = *actualCall_retVals.tx; // for calculating block weight; FIXME: std::move?
+  retVals.txBlob_byteLength = txBlob_byteLength;
 }
