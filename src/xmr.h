@@ -7,8 +7,6 @@ extern "C" {
 
 int sign_transaction_json(char * str, const char ** result);
 
-int sum(int a, int b);
-
 #ifdef __cplusplus
 }
 #endif

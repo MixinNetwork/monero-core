@@ -22,7 +22,7 @@ int sign_transaction_json(char * str, const char ** result) {
   boost::property_tree::ptree json_root;
   if (!serial_bridge_utils::parsed_json_root(str, json_root)) {
     // it will already have thrown an exception
-    return 0;
+    return 101;
   }
 
   const string output_address = json_root.get<string>("output_address");
@@ -83,7 +83,7 @@ int sign_transaction_json(char * str, const char ** result) {
       );
 
   if (create_tx__retVals.errCode != noError) {
-    return 0;
+    return create_tx__retVals.errCode;
   }
 
   THROW_WALLET_EXCEPTION_IF(create_tx__retVals.signed_serialized_tx_string == boost::none, error::wallet_internal_error, "Not expecting no signed_serialized_tx_string given no error");
@@ -96,11 +96,7 @@ int sign_transaction_json(char * str, const char ** result) {
   *result = (char *) malloc(sizeof(char) * (r.size() + 1));
   *result = r.c_str();
 
-  return 1;
-}
-
-int sum(int a, int b) {
-  return a + b;
+  return 200;
 }
 
 #ifdef __cplusplus
