@@ -63,19 +63,23 @@ int sign_transaction_json(char * str, const char ** result) {
     unspent_outs.push_back(std::move(out));
   }
 
-  std::vector<string> to_address_strings = {output_address};
-  std::vector<uint64_t> sending_amounts = {amount};
+  std::vector<recipient> recipients;
+  recipient recipient_out{};
+  recipient_out.address = output_address;
+  recipient_out.amount = amount;
+  recipients.push_back(recipient_out);
 
   if (change_amount > 0) {
-    to_address_strings.push_back(change_address);
-    sending_amounts.push_back(change_amount);
+    recipient recipient_change{};
+    recipient_change.address = change_address;
+    recipient_change.amount = change_amount;
+    recipients.push_back(recipient_change);
   }
 
   Convenience_TransactionConstruction_RetVals create_tx__retVals;
   convenience_create_transaction(
       create_tx__retVals,
-      to_address_strings,
-      sending_amounts,
+      recipients,
       fee,
       unspent_outs,
       0,

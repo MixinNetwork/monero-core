@@ -51,7 +51,6 @@ bool construct_tx_with_tx_key_cpp(
     const std::vector<crypto::secret_key> &additional_tx_keys,
     bool rct,
     const rct::RCTConfig &rct_config,
-    bool shuffle_outs,
     bool use_view_tags
 ) {
   hw::device &hwdev = hw::get_device("default");
@@ -204,11 +203,6 @@ bool construct_tx_with_tx_key_cpp(
 
     input_to_key.key_offsets = absolute_output_offsets_to_relative(input_to_key.key_offsets);
     tx.vin.push_back(input_to_key);
-  }
-
-  if (shuffle_outs)
-  {
-    std::shuffle(destinations.begin(), destinations.end(), crypto::random_device{});
   }
 
   // sort ins by their key image
@@ -495,8 +489,7 @@ bool construct_tx_and_get_tx_key_cpp(
       }
     }
 
-    bool shuffle_outs = true;
-    bool r = construct_tx_with_tx_key_cpp(secret_sources, destinations, change_addr, extra, tx, unlock_time, tx_key, additional_tx_keys, rct, rct_config, shuffle_outs, use_view_tags);
+    bool r = construct_tx_with_tx_key_cpp(secret_sources, destinations, change_addr, extra, tx, unlock_time, tx_key, additional_tx_keys, rct, rct_config, use_view_tags);
     hwdev.close_tx();
     return r;
   } catch(...) {
@@ -524,8 +517,7 @@ bool _rct_hex_to_rct_commit(
 void create_transaction_cpp (
     TransactionConstruction_RetVals &retVals,
     const uint32_t subaddr_account_idx,
-    const vector<address_parse_info> &to_addrs, 
-    const vector<uint64_t>& sending_amounts,
+    const vector<recipient_info> &recipients,
     uint64_t change_amount,
     uint64_t fee_amount,
     const vector<spendable_output> &outputs,
@@ -562,8 +554,8 @@ void create_transaction_cpp (
   }
 
   uint64_t needed_money = fee_amount + change_amount;
-  for (uint64_t amount : sending_amounts) {
-    needed_money += amount;
+  for (size_t i = 0; i < recipients.size(); ++i) {
+    needed_money += recipients[i].amount;
   }
 
   uint64_t found_money = 0;
@@ -701,16 +693,12 @@ void create_transaction_cpp (
     secret_sources.push_back(secret_source);
   }
 
-  THROW_WALLET_EXCEPTION_IF(to_addrs.size() != sending_amounts.size(),
-      error::wallet_internal_error,
-      "Amounts don't match destinations");
-
   std::vector<tx_destination_entry> splitted_dsts;
-  for (size_t i = 0; i < to_addrs.size(); ++i) {
+  for (size_t i = 0; i < recipients.size(); ++i) {
     tx_destination_entry to_dst = AUTO_VAL_INIT(to_dst);
-    to_dst.addr = to_addrs[i].address;
-    to_dst.amount = sending_amounts[i];
-    to_dst.is_subaddress = to_addrs[i].is_subaddress;
+    to_dst.addr = recipients[i].address_info.address;
+    to_dst.amount = recipients[i].amount;
+    to_dst.is_subaddress = recipients[i].address_info.is_subaddress;
     splitted_dsts.push_back(to_dst);
   }
 
@@ -770,8 +758,7 @@ void create_transaction_cpp (
 // convenience__create_transaction
 void convenience_create_transaction(
     Convenience_TransactionConstruction_RetVals& retVals,
-    const vector<string>& to_address_strings,
-    const vector<uint64_t>& sending_amounts,
+    const vector<recipient>& recipients,
     uint64_t fee_amount,
     const vector<spendable_output> &outs,
     uint64_t unlock_time,
@@ -779,39 +766,44 @@ void convenience_create_transaction(
 ) {
   retVals.errCode = noError;
 
-  vector<address_parse_info> to_addr_infos(to_address_strings.size());
-  size_t to_addr_idx = 0;
-  for (const auto& addr : to_address_strings) {
+  vector<recipient_info> to_addr_infos;
+  for (const auto& recipient : recipients) {
+    address_parse_info to_addr_info;
+    string addr = recipient.address;
     THROW_WALLET_EXCEPTION_IF(
         addr.find(".") != std::string::npos, // assumed to be an OA address asXMR addresses do not have periods and OA addrs must
         error::wallet_internal_error,
         "Integrators must resolve OA addresses before calling Send"
         ); // This would be an app code fault
-    if (!get_account_address_from_str(to_addr_infos[to_addr_idx++], nettype, addr)) {
+    if (!get_account_address_from_str(to_addr_info, nettype, addr)) {
       retVals.errCode = couldntDecodeToAddress;
       return;
     }
+    recipient_info info{};
+    info.address_info = to_addr_info;
+    info.amount = recipient.amount;
+    to_addr_infos.push_back(info);
   }
 
   std::vector<uint8_t> extra;
   // payment_id_string is empty
   bool payment_id_seen = false;
   for (const auto& to_addr_info : to_addr_infos) {
-    if (to_addr_info.is_subaddress && payment_id_seen) {
+    if (to_addr_info.address_info.is_subaddress && payment_id_seen) {
       retVals.errCode = cantUsePIDWithSubAddress; // Never use a subaddress with a payment ID
       return;
     }
-    if (to_addr_info.has_payment_id) {
+    if (to_addr_info.address_info.has_payment_id) {
       if (payment_id_seen) {
         retVals.errCode = nonZeroPIDWithIntAddress; // can't use int addr at same time as supplying manual pid
         return;
       }
-      if (to_addr_info.is_subaddress) {
+      if (to_addr_info.address_info.is_subaddress) {
         THROW_WALLET_EXCEPTION_IF(false, error::wallet_internal_error, "Unexpected is_subaddress && has_payment_id"); // should never happen
         return;
       }
       std::string extra_nonce;
-      set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, to_addr_info.payment_id);
+      set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, to_addr_info.address_info.payment_id);
       bool r = add_extra_nonce_to_tx_extra(extra, extra_nonce);
       if (!r) {
         retVals.errCode = couldntAddPIDNonceToTXExtra;
@@ -831,7 +823,6 @@ void convenience_create_transaction(
       actualCall_retVals,
       subaddr_account_idx,
       to_addr_infos,
-      sending_amounts,
       change_amount,
       fee_amount,
       outs,
