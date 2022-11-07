@@ -43,10 +43,19 @@ struct spendable_output {
   script_pub_key spk;
 };
 
+struct recipient {
+  string address;
+  uint64_t amount;
+};
+
+struct recipient_info {
+  address_parse_info address_info;
+  uint64_t amount;
+};
+
 void convenience_create_transaction(
   Convenience_TransactionConstruction_RetVals &retVals,
-  const vector<string> &to_address_strings,
-	const vector<uint64_t> &sending_amounts,
+  const vector<recipient> &to_address_strings,
 	uint64_t fee_amount,
 	const vector<spendable_output> &outs,
   uint64_t unlock_time,
